@@ -6,21 +6,25 @@ use Illuminate\Support\Facades\Log;
 
 class WebhookService
 {
-    public function sendWebhook($order)
+    public function sendWebhook(array $order)
     {
-        if ($order->webhook_url) {
+        if ($order) {
             $payload = [
-                'order_id' => $order->order_id,
-                'status' => $order->status,
-                'updated_at' => $order->updated_at->toIso8601String(),
+                'order_id' => $order['orderId'] ?? null,
+                'status' => $order['status'] ?? null,
+                'proof_image1' => !empty($order['proof_image1']) ? asset('storage/' . $order['proof_image1']) : null,
+                'proof_image2' => !empty($order['proof_image2']) ? asset('storage/' . $order['proof_image2']) : null,
+                'reason' => $order['reason'] ?? null,
             ];
-            $order->webhook_url = 'http://localhost:8001/api/webhook';
-            $response = Http::post($order->webhook_url, $payload);
+
+            $webhookUrl = $order['webhook_url'] ?? 'http://localhost:8001/api/webhook';
+
+            $response = Http::post($webhookUrl, $payload);
 
             if ($response->failed()) {
-                Log::error("Webhook failed for order {$order->order_id}: " . $response->body());
+                Log::error("Webhook failed for order {$payload['order_id']}: " . $response->status() . ' - ' . $response->body(), ['payload' => $payload]);
             } else {
-                Log::info("Webhook sent successfully for order {$order->order_id}");
+                Log::info("Webhook sent successfully for order {$payload['order_id']}", ['status' => $response->status(), 'payload' => $payload]);
             }
         }
     }
