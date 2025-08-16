@@ -176,7 +176,7 @@
                             <td class="py-6 px-6">
                                 <div class="space-y-1">
                                     <div class="font-bold text-gray-900 text-lg">{{ $order->order_id }}</div>
-                                    <div class="text-gray-600 font-medium">{{ $order->seller }}</div>
+                                    <!-- <div class="text-gray-600 font-medium">{{ $order->seller }}</div> -->
                                     <div class="text-gray-400 text-sm">
                                         📅 {{ $order->created_at->format('M d, Y') }}
                                     </div>
@@ -184,7 +184,7 @@
                             </td>
                             <td class="py-6 px-6">
                                 <div class="font-semibold text-gray-900">
-                                    {{ $order->customer_name ?? 'Customer Name Not Available' }}
+                                    {{ $order->seller ?? 'Customer Name Not Available' }}
                                 </div>
                             </td>
                             <td class="py-6 px-6">
@@ -198,28 +198,28 @@
                                 'OutForDelivery' => [
                                 'class' => 'bg-teal-100 text-teal-800 border-teal-300',
                                 'icon' => '🚚',
-                                'label' => 'Out For Delivery'
+                                'label' => 'Đang giao hàng'
                                 ],
                                 'Delivered' => [
                                 'class' => 'bg-green-100 text-green-800 border-green-300',
                                 'icon' => '✅',
-                                'label' => 'Delivered'
+                                'label' => 'Đã giao hàng'
                                 ],
                                 'DeliveryFailed' => [
                                 'class' => 'bg-red-100 text-red-800 border-red-300',
                                 'icon' => '❌',
-                                'label' => 'Delivery Failed'
+                                'label' => 'Giao hàng thất bại'
                                 ],
                                 'CancelledByBuyer' => [
                                 'class' => 'bg-red-100 text-red-800 border-red-300',
                                 'icon' => '🚫',
-                                'label' => 'Cancelled'
+                                'label' => 'Hủy'
                                 ],
                                 ];
                                 $config = $statusConfig[$order->status] ?? [
                                 'class' => 'bg-gray-100 text-gray-800 border-gray-300',
                                 'icon' => '📦',
-                                'label' => 'Pending'
+                                'label' => 'Chưa gửi'
                                 ];
                                 @endphp
                                 <span
