@@ -42,9 +42,8 @@ class OrderController extends Controller
             
             $img1 = $request->file('proof_image1')->store('proofs', 'public');
             $img2 = $request->file('proof_image2')->store('proofs', 'public');
-
-            $updateData['proof_image1'] = $img1;
-            $updateData['proof_image2'] = $img2;
+            $url1 = asset('storage/' . $img1);
+            $url2 = asset('storage/' . $img2);
             
         }
         if( $newStatus == 'CancelledByUser'){
@@ -64,8 +63,8 @@ class OrderController extends Controller
                 'orderId' => $orderId,
                 'status' => $order->status,
                 'deliver_date' => $order->updated_at, 
-                'proof_image1' => $img1 ?? null,
-                'proof_image2' => $img2 ?? null,
+                'proof_image1' => $url1 ?? null,
+                'proof_image2' => $url2 ?? null,
                 'reason' => $reason ?? null
             ];
         
