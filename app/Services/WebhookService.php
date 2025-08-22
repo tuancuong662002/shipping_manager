@@ -15,9 +15,9 @@ class WebhookService
             $response = Http::post('http://localhost:8001/api/webhook', $order);
 
             if ($response->failed()) {
-                Log::error("Webhook failed for order {}: " . $response->status() . ' - ' . $response->body(), ['payload' => $payload]);
+                Log::error("Webhook sent fail for order : ", $order );
             } else {
-                // Log::info("Webhook sent successfully for order {}", ['status' => $response->status(), 'payload' => $payload]);
+                Log::info("Webhook sent successfully for order : ", $order );
             }
         }
     }
@@ -38,7 +38,7 @@ class WebhookService
         $order = Order::updateOrCreate(
             ['order_id' => $validated['order_code']],
             [
-                'status' => 'Shipped',
+                'status' => 'Pending',
                 'seller' => $validated['seller'],
                 'sellerPhone' => $validated['seller_phone'],
                 'address' => $validated['shipping_address'],

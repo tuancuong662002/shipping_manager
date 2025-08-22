@@ -128,7 +128,7 @@
                     <div>
                         <p class="text-gray-500 text-sm font-medium uppercase tracking-wide">Issues</p>
                         <p class="text-3xl font-bold text-red-600 mt-1">
-                            {{ $orders->whereIn('status', ['DeliveryFailed', 'CancelledByBuyer'])->count() }}
+                            {{ $orders->whereIn('status', ['Failed', 'Cancelled'])->count() }}
                         </p>
                     </div>
                     <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center">
@@ -176,7 +176,6 @@
                             <td class="py-6 px-6">
                                 <div class="space-y-1">
                                     <div class="font-bold text-gray-900 text-lg">{{ $order->order_id }}</div>
-                                    <!-- <div class="text-gray-600 font-medium">{{ $order->seller }}</div> -->
                                     <div class="text-gray-400 text-sm">
                                         📅 {{ $order->created_at->format('M d, Y') }}
                                     </div>
@@ -195,6 +194,11 @@
                             <td class="py-6 px-6">
                                 @php
                                 $statusConfig = [
+                                'Pending' => [
+                                'class' => 'bg-gray-100 text-gray-800 border-gray-300',
+                                'icon' => '📦',
+                                'label' => 'Chưa gửi'
+                                ],
                                 'OutForDelivery' => [
                                 'class' => 'bg-teal-100 text-teal-800 border-teal-300',
                                 'icon' => '🚚',
@@ -205,15 +209,15 @@
                                 'icon' => '✅',
                                 'label' => 'Đã giao hàng'
                                 ],
-                                'DeliveryFailed' => [
+                                'Failed' => [
                                 'class' => 'bg-red-100 text-red-800 border-red-300',
                                 'icon' => '❌',
                                 'label' => 'Giao hàng thất bại'
                                 ],
-                                'CancelledByBuyer' => [
+                                'Cancelled' => [
                                 'class' => 'bg-red-100 text-red-800 border-red-300',
                                 'icon' => '🚫',
-                                'label' => 'Hủy'
+                                'label' => 'Đã hủy'
                                 ],
                                 ];
                                 $config = $statusConfig[$order->status] ?? [
@@ -229,27 +233,38 @@
                                 </span>
                             </td>
                             <td class="py-6 px-6">
-                                @if (!in_array($order->status, ['Delivered', 'CancelledByBuyer']))
+                                @php
+                                $actionButtons = [
+                                'Pending' => [
+                                ['status' => 'OutForDelivery', 'label' => 'Out For Delivery', 'icon' => '🚚', 'class' =>
+                                'bg-teal-600 hover:bg-teal-700'],
+                                ['status' => 'Cancelled', 'label' => 'Cancel', 'icon' => '🚫', 'class' => 'bg-gray-600
+                                hover:bg-gray-700']
+                                ],
+                                'OutForDelivery' => [
+                                ['status' => 'Delivered', 'label' => 'Delivered', 'icon' => '✅', 'class' =>
+                                'bg-green-600 hover:bg-green-700'],
+                                ['status' => 'Failed', 'label' => 'Failed', 'icon' => '❌', 'class' => 'bg-red-600
+                                hover:bg-red-700']
+                                ],
+                                'Failed' => [
+                                ['status' => 'OutForDelivery', 'label' => 'Retry Delivery', 'icon' => '🚚', 'class' =>
+                                'bg-teal-600 hover:bg-teal-700']
+                                ],
+                                'Delivered' => [],
+                                'Cancelled' => []
+                                ];
+                                $buttons = $actionButtons[$order->status] ?? [];
+                                @endphp
+                                @if (!empty($buttons))
                                 <div class="flex flex-wrap gap-2">
+                                    @foreach ($buttons as $button)
                                     <button type="button"
-                                        onclick="openModal('{{ e($order->order_id) }}', 'OutForDelivery')"
-                                        class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm">
-                                        🚚 Out For Delivery
+                                        onclick="openModal('{{ e($order->order_id) }}', '{{ $button['status'] }}')"
+                                        class="{{ $button['class'] }} text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm">
+                                        <span class="mr-1">{{ $button['icon'] }}</span> {{ $button['label'] }}
                                     </button>
-                                    <button type="button" onclick="openModal('{{ e($order->order_id) }}', 'Delivered')"
-                                        class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm">
-                                        ✅ Delivered
-                                    </button>
-                                    <button type="button"
-                                        onclick="openModal('{{ e($order->order_id) }}', 'DeliveryFailed')"
-                                        class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm">
-                                        ❌ Failed
-                                    </button>
-                                    <button type="button"
-                                        onclick="openModal('{{ e($order->order_id) }}', 'CancelledByBuyer')"
-                                        class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 shadow-sm">
-                                        🚫 Cancel
-                                    </button>
+                                    @endforeach
                                 </div>
                                 @else
                                 <span class="text-gray-500 text-sm font-medium">No actions available</span>
@@ -311,6 +326,8 @@
                             class="border-2 border-gray-300 rounded-lg px-4 py-3 w-full focus:border-blue-500 focus:outline-none"
                             rows="4" placeholder="Please provide a detailed reason..."></textarea>
                     </div>
+                    <div id="reasonError" class="hidden text-red-600 text-sm mt-2">Reason is required for this status
+                        change.</div>
 
                     <!-- Action Buttons -->
                     <div class="mt-8 flex justify-end gap-3">
@@ -335,6 +352,69 @@
     </div>
 
     <script>
+    // Configuration for valid status transitions
+    const statusConfig = {
+        'Pending': {
+            allowedTransitions: ['OutForDelivery', 'Cancelled'],
+            label: 'Chưa gửi',
+            icon: '📦',
+            class: 'bg-gray-100 text-gray-800 border-gray-300'
+        },
+        'OutForDelivery': {
+            allowedTransitions: ['Delivered', 'Failed'],
+            label: 'Đang giao hàng',
+            icon: '🚚',
+            class: 'bg-teal-100 text-teal-800 border-teal-300'
+        },
+        'Failed': {
+            allowedTransitions: ['OutForDelivery'],
+            label: 'Giao hàng thất bại',
+            icon: '❌',
+            class: 'bg-red-100 text-red-800 border-red-300'
+        },
+        'Delivered': {
+            allowedTransitions: [],
+            label: 'Đã giao hàng',
+            icon: '✅',
+            class: 'bg-green-100 text-green-800 border-green-300'
+        },
+        'Cancelled': {
+            allowedTransitions: [],
+            label: 'Đã hủy',
+            icon: '🚫',
+            class: 'bg-red-100 text-red-800 border-red-300'
+        }
+    };
+
+    // Button configurations
+    const actionButtons = {
+        'OutForDelivery': {
+            label: 'Out For Delivery',
+            icon: '🚚',
+            class: 'bg-teal-600 hover:bg-teal-700'
+        },
+        'Delivered': {
+            label: 'Delivered',
+            icon: '✅',
+            class: 'bg-green-600 hover:bg-green-700'
+        },
+        'Failed': {
+            label: 'Failed',
+            icon: '❌',
+            class: 'bg-red-600 hover:bg-red-700'
+        },
+        'Cancelled': {
+            label: 'Cancel',
+            icon: '🚫',
+            class: 'bg-gray-600 hover:bg-gray-700'
+        },
+        'Retry Delivery': {
+            label: 'Retry Delivery',
+            icon: '🚚',
+            class: 'bg-teal-600 hover:bg-teal-700'
+        }
+    };
+
     function openModal(orderId, status) {
         try {
             console.log(`Opening modal for order ${orderId} with status ${status}`);
@@ -345,6 +425,7 @@
             const modalOrderId = document.getElementById('modalOrderId');
             const deliveredFields = document.getElementById('deliveredFields');
             const reasonFields = document.getElementById('reasonFields');
+            const reasonError = document.getElementById('reasonError');
             const confirmButton = document.getElementById('confirmButton');
             const proofImage1 = document.getElementById('proofImage1');
             const proofImage2 = document.getElementById('proofImage2');
@@ -355,6 +436,7 @@
             // Reset form state
             deliveredFields.classList.add('hidden');
             reasonFields.classList.add('hidden');
+            reasonError.classList.add('hidden');
             confirmButton.disabled = (status === 'Delivered');
             thumbnail1.innerHTML = '';
             thumbnail2.innerHTML = '';
@@ -365,15 +447,15 @@
             // Set modal content
             modalOrderId.value = orderId;
             modalStatus.value = status;
-            modalTitle.textContent = `Update Status: ${status} for Order ${orderId}`;
+            modalTitle.textContent = `Update Status: ${actionButtons[status]?.label || status} for Order ${orderId}`;
             document.getElementById('statusForm').action = `/orders/${orderId}/status`;
 
             // Show appropriate fields based on status
             if (status === 'Delivered') {
                 deliveredFields.classList.remove('hidden');
-            } else if (status === 'DeliveryFailed' || status === 'CancelledByBuyer') {
+            } else if (status === 'Failed' || status === 'Cancelled') {
                 reasonFields.classList.remove('hidden');
-                confirmButton.disabled = false;
+                confirmButton.disabled = true; // Enable only if reason is provided
             } else {
                 confirmButton.disabled = false;
             }
@@ -441,6 +523,17 @@
                 thumbnail2.innerHTML = '';
             }
             checkDeliveredImages();
+        });
+
+        // Reason validation for Failed/Cancelled
+        const reasonTextarea = document.getElementById('reason');
+        reasonTextarea.addEventListener('input', function() {
+            const modalStatus = document.getElementById('modalStatus').value;
+            const reasonError = document.getElementById('reasonError');
+            if (modalStatus === 'Failed' || modalStatus === 'Cancelled') {
+                confirmButton.disabled = !this.value.trim();
+                reasonError.classList.toggle('hidden', !!this.value.trim());
+            }
         });
     }
 
